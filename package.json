@@ -1,10 +1,10 @@
 {
   "name": "quran-french-api",
   "version": "0.0.1",
-  "description": "",
+  "description": "Read-only Quran French API built with NestJS",
   "author": "",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

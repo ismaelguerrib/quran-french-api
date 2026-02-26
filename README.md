@@ -101,3 +101,30 @@ GET /v1/verses/2/255?source=hamidullah-fr,masson-fr
 The source code of this project is licensed under the **Apache License 2.0**.
 
 Please note that the Quran translations used to populate the database are subject to their own respective licenses and copyrights. This project does not claim ownership over the translation texts.
+
+---
+
+## 🚀 First Steps Configured
+
+The project now includes a first working API foundation aligned with the design above:
+
+- URI versioning through `/v1`
+- Read-only endpoints:
+  - `GET /v1/health`
+  - `GET /v1/verses/:surahNumber/:ayahNumber?source=...`
+- Initial OpenAPI document endpoint:
+  - `GET /v1/openapi.json`
+
+### Run locally
+
+```bash
+npm install
+npm run start:dev
+```
+
+### Run tests
+
+```bash
+npm test
+npm run test:e2e
+```
