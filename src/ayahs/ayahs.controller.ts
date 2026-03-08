@@ -5,6 +5,7 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
+import { AyahService } from './ayahs.service';
 
 @Controller('ayahs')
 export class AyahController {
