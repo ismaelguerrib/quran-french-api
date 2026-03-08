@@ -2,8 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, type TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
-import { VersesModule } from './verses/verses.module';
-
+import { AyahModule } from './ayahs/ayahs.module';
 const configModule = ConfigModule.forRoot({ isGlobal: true });
 
 const databaseImports =
@@ -64,7 +63,7 @@ const databaseImports =
       ];
 
 @Module({
-  imports: [configModule, ...databaseImports, VersesModule],
+  imports: [configModule, ...databaseImports, AyahModule],
   controllers: [AppController],
 })
 export class AppModule {}

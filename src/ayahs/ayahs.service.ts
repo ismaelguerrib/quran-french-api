@@ -1,24 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-export interface VerseTranslation {
-  source: string;
-  author: string;
-  text: string;
-}
-
-export interface VerseResponse {
+export interface Ayah {
   surahNumber: number;
   ayahNumber: number;
-  translations: VerseTranslation[];
+  source: string;
+  translation: string;
 }
 
 @Injectable()
-export class VersesService {
-  getVerse(
+export class AyahService {
+  getAyah(
     surahNumber: number,
     ayahNumber: number,
     sourceSlugs: string[],
-  ): VerseResponse {
+  ): Ayah {
     if (sourceSlugs.length === 0) {
       throw new NotFoundException(
         'No translation source provided. Use ?source=hamidullah-fr,masson-fr',
@@ -28,11 +23,8 @@ export class VersesService {
     return {
       surahNumber,
       ayahNumber,
-      translations: sourceSlugs.map((source) => ({
-        source,
-        author: 'Test Author',
-        text: 'Test translation text',
-      })),
+      source: sourceSlugs.join(','),
+      translation: 'Test translation text',
     };
   }
 }

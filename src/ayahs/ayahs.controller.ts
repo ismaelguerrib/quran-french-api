@@ -5,14 +5,13 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
-import { VersesService } from './verses.service';
 
-@Controller('verses')
-export class VersesController {
-  constructor(private readonly versesService: VersesService) {}
+@Controller('ayahs')
+export class AyahController {
+  constructor(private readonly ayahService: AyahService) {}
 
   @Get(':surahNumber/:ayahNumber')
-  getVerse(
+  getAyah(
     @Param('surahNumber') surahNumberParam: string,
     @Param('ayahNumber') ayahNumberParam: string,
     @Query('source') source: string,
@@ -20,7 +19,7 @@ export class VersesController {
     const surahNumber = this.parsePositiveInt(surahNumberParam, 'surahNumber');
     const ayahNumber = this.parsePositiveInt(ayahNumberParam, 'ayahNumber');
 
-    return this.versesService.getVerse(
+    return this.ayahService.getAyah(
       surahNumber,
       ayahNumber,
       this.parseSources(source),
