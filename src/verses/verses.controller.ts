@@ -15,7 +15,7 @@ export class VersesController {
   getVerse(
     @Param('surahNumber') surahNumberParam: string,
     @Param('ayahNumber') ayahNumberParam: string,
-    @Query('source') source: string | undefined,
+    @Query('source') source: string,
   ) {
     const surahNumber = this.parsePositiveInt(surahNumberParam, 'surahNumber');
     const ayahNumber = this.parsePositiveInt(ayahNumberParam, 'ayahNumber');
@@ -37,7 +37,7 @@ export class VersesController {
     return parsed;
   }
 
-  private parseSources(source?: string): string[] {
+  private parseSources(source: string): string[] {
     if (!source) {
       return [];
     }
