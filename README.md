@@ -122,6 +122,46 @@ npm install
 npm run start:dev
 ```
 
+### Run with local PostgreSQL (Docker)
+
+1. Create your local env file:
+
+```bash
+cp .env.example .env
+```
+
+2. Start PostgreSQL:
+
+```bash
+docker compose up -d postgres
+```
+
+3. Verify the container is healthy:
+
+```bash
+docker compose ps
+```
+
+4. Start the API:
+
+```bash
+npm run start:dev
+```
+
+5. Stop PostgreSQL when done:
+
+```bash
+docker compose down
+```
+
+Default local credentials are defined in `.env.example`:
+
+- host: `127.0.0.1`
+- port: `5432`
+- database: `quran_french_api`
+- username: `quran_api`
+- password: `quran_api`
+
 ### Run tests
 
 ```bash

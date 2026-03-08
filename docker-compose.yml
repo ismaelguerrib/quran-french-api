@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: quran-french-api-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-quran_french_api}
+      POSTGRES_USER: ${DB_USERNAME:-quran_api}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-quran_api}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USERNAME:-quran_api} -d ${DB_NAME:-quran_french_api}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
