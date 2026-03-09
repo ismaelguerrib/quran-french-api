@@ -1,7 +1,9 @@
 const TRUE_OR_FALSE = new Set(['true', 'false']);
 
 function readOptionalString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+  return typeof value === 'string' && value.trim().length > 0
+    ? value
+    : undefined;
 }
 
 function parseNumber(
@@ -16,8 +18,14 @@ function parseNumber(
   }
 
   const parsedValue = Number(value);
-  if (!Number.isInteger(parsedValue) || parsedValue < min || parsedValue > max) {
-    throw new Error(`${fieldName} must be an integer between ${min} and ${max}.`);
+  if (
+    !Number.isInteger(parsedValue) ||
+    parsedValue < min ||
+    parsedValue > max
+  ) {
+    throw new Error(
+      `${fieldName} must be an integer between ${min} and ${max}.`,
+    );
   }
 
   return String(parsedValue);
@@ -49,7 +57,9 @@ function validateDatabaseUrl(value: string): void {
   }
 
   if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
-    throw new Error('DATABASE_URL must use postgres:// or postgresql:// protocol.');
+    throw new Error(
+      'DATABASE_URL must use postgres:// or postgresql:// protocol.',
+    );
   }
 }
 

@@ -4,7 +4,10 @@ import { TypeOrmModule, type TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AyahTranslationModule } from './ayah-translations/ayah-translation.module';
 import { AyahModule } from './ayahs/ayahs.module';
-import { createDatabaseOptions, type DatabaseEnv } from './config/database.config';
+import {
+  createDatabaseOptions,
+  type DatabaseEnv,
+} from './config/database.config';
 import { validateEnv } from './config/env.validation';
 import { TranslationSourceModule } from './translation-sources/translation-source.module';
 
