@@ -12,7 +12,7 @@ export class AyahController {
   constructor(private readonly ayahService: AyahService) {}
 
   @Get(':surahNumber/:ayahNumber')
-  getAyah(
+  async getAyah(
     @Param('surahNumber') surahNumberParam: string,
     @Param('ayahNumber') ayahNumberParam: string,
     @Query('source') source: string,
