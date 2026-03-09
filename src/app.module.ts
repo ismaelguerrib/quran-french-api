@@ -4,8 +4,14 @@ import { TypeOrmModule, type TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AyahTranslationModule } from './ayah-translations/ayah-translation.module';
 import { AyahModule } from './ayahs/ayahs.module';
+import { createDatabaseOptions, type DatabaseEnv } from './config/database.config';
+import { validateEnv } from './config/env.validation';
 import { TranslationSourceModule } from './translation-sources/translation-source.module';
-const configModule = ConfigModule.forRoot({ isGlobal: true });
+
+const configModule = ConfigModule.forRoot({
+  isGlobal: true,
+  validate: validateEnv,
+});
 
 const databaseImports =
   process.env.NODE_ENV === 'test'
@@ -14,51 +20,22 @@ const databaseImports =
         TypeOrmModule.forRootAsync({
           inject: [ConfigService],
           useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
-            const databaseUrl = configService.get<string>('DATABASE_URL');
-            const sslEnabled =
-              configService.get<string>('DB_SSL', 'false').toLowerCase() ===
-              'true';
-            const loggingEnabled =
-              configService.get<string>('DB_LOGGING', 'false').toLowerCase() ===
-              'true';
-            const poolMax = Number(
-              configService.get<string>('DB_POOL_MAX', '10'),
-            );
-            const connectionPoolMax = Number.isNaN(poolMax) ? 10 : poolMax;
-
-            if (databaseUrl) {
-              return {
-                type: 'postgres',
-                url: databaseUrl,
-                ssl: sslEnabled ? { rejectUnauthorized: false } : false,
-                autoLoadEntities: true,
-                synchronize: false,
-                logging: loggingEnabled,
-                extra: {
-                  max: connectionPoolMax,
-                },
-              };
-            }
-
-            const port = Number(configService.get<string>('DB_PORT', '5432'));
+            const databaseEnv: DatabaseEnv = {
+              DATABASE_URL: configService.get<string>('DATABASE_URL'),
+              DB_HOST: configService.get<string>('DB_HOST'),
+              DB_PORT: configService.get<string>('DB_PORT'),
+              DB_USERNAME: configService.get<string>('DB_USERNAME'),
+              DB_PASSWORD: configService.get<string>('DB_PASSWORD'),
+              DB_NAME: configService.get<string>('DB_NAME'),
+              DB_SSL: configService.get<string>('DB_SSL'),
+              DB_LOGGING: configService.get<string>('DB_LOGGING'),
+              DB_POOL_MAX: configService.get<string>('DB_POOL_MAX'),
+            };
 
             return {
-              type: 'postgres',
-              host: configService.get<string>('DB_HOST', '127.0.0.1'),
-              port: Number.isNaN(port) ? 5432 : port,
-              username: configService.get<string>('DB_USERNAME', 'quran_api'),
-              password: configService.get<string>('DB_PASSWORD', 'quran_api'),
-              database: configService.get<string>(
-                'DB_NAME',
-                'quran_french_api',
-              ),
-              ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+              ...createDatabaseOptions(databaseEnv),
               autoLoadEntities: true,
               synchronize: false,
-              logging: loggingEnabled,
-              extra: {
-                max: connectionPoolMax,
-              },
             };
           },
         }),
