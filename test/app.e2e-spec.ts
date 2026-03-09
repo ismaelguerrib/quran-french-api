@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { registerOpenApiJsonEndpoint } from '../src/openapi/openapi';
 import { AppModule } from './../src/app.module';
 
 describe('Quran French API (e2e)', () => {
@@ -14,6 +15,7 @@ describe('Quran French API (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('v1');
+    registerOpenApiJsonEndpoint(app);
     await app.init();
   });
 
@@ -34,26 +36,20 @@ describe('Quran French API (e2e)', () => {
           paths: Record<string, unknown>;
         };
 
-        expect(body.openapi).toBe('3.0.3');
-        expect(body.paths['/verses/{surahNumber}/{ayahNumber}']).toBeDefined();
+        expect(body.openapi).toBe('3.0.0');
+        expect(body.paths['/v1/health'] ?? body.paths['/health']).toBeDefined();
+        expect(
+          body.paths['/v1/ayahs/{surahNumber}/{ayahNumber}'] ??
+            body.paths['/ayahs/{surahNumber}/{ayahNumber}'],
+        ).toBeDefined();
+        expect(
+          body.paths['/v1/translation-source'] ??
+            body.paths['/translation-source'],
+        ).toBeDefined();
+        expect(
+          body.paths['/v1/ayah-translations'] ??
+            body.paths['/ayah-translations'],
+        ).toBeDefined();
       });
-  });
-
-  it('/v1/verses/2/255 (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/v1/verses/2/255?source=hamidullah-fr,masson-fr')
-      .expect(200)
-      .expect({
-        surahNumber: 2,
-        ayahNumber: 255,
-        translations: [
-          { source: 'hamidullah-fr', author: null, text: null },
-          { source: 'masson-fr', author: null, text: null },
-        ],
-      });
-  });
-
-  it('/v1/verses/2/255 (GET) should reject invalid source', () => {
-    return request(app.getHttpServer()).get('/v1/verses/2/255').expect(404);
   });
 });
