@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -14,6 +8,9 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { AyahResponseDto } from './dto/ayah-response.dto';
+import { GetAyahParamsDto } from './dto/get-ayah-params.dto';
+import { GetAyahQueryDto } from './dto/get-ayah-query.dto';
 import { AyahService } from './ayahs.service';
 
 @ApiTags('Ayahs')
@@ -23,98 +20,46 @@ export class AyahController {
 
   @Get(':surahNumber/:ayahNumber')
   @ApiOperation({
-    summary: 'Get translations for one ayah and selected sources',
+    summary: 'Get one verse and its translations',
   })
   @ApiParam({
     name: 'surahNumber',
-    description: 'Surah number (>= 1)',
+    description: 'Surah number from the source dataset.',
     schema: { type: 'integer', minimum: 1 },
   })
   @ApiParam({
     name: 'ayahNumber',
-    description: 'Ayah number (>= 1)',
-    schema: { type: 'integer', minimum: 1 },
+    description:
+      'Verse key from the source dataset. 0 is the surah title, 0,5 is the Bismillah row, and some rare composite keys also exist.',
+    schema: { type: 'string', example: '255' },
   })
   @ApiQuery({
     name: 'source',
-    required: true,
+    required: false,
     description:
-      'Comma-separated source codes (example: hamidullah-fr,masson-fr)',
-    schema: { type: 'string' },
+      'Optional comma-separated source codes. When omitted, all sources for the verse are returned.',
+    schema: { type: 'string', example: 'hamidullah-fr,masson-fr' },
   })
   @ApiOkResponse({
-    description: 'Ayah with selected translations',
-    schema: {
-      type: 'object',
-      properties: {
-        surahNumber: { type: 'integer', example: 1 },
-        ayahNumber: { type: 'integer', example: 1 },
-        translations: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              source: { type: 'string', example: 'hamidullah-fr' },
-              author: {
-                type: 'string',
-                nullable: true,
-                example: 'Muhammad Hamidullah',
-              },
-              text: {
-                type: 'string',
-                nullable: true,
-                example:
-                  "[Test] Al-Fatiha 1:1 - Au nom d'Allah, le Tout Misericordieux, le Tres Misericordieux.",
-              },
-            },
-            required: ['source', 'author', 'text'],
-          },
-        },
-      },
-      required: ['surahNumber', 'ayahNumber', 'translations'],
-    },
+    description:
+      'Verse-aligned response with translations ordered by request or source chronology.',
+    type: AyahResponseDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid path params format' })
+  @ApiBadRequestResponse({
+    description: 'Invalid path or query parameters.',
+  })
   @ApiNotFoundResponse({
-    description: 'Ayah not found or no source query parameter provided',
+    description:
+      'Verse not found for the given surah number and dataset verse key.',
   })
   async getAyah(
-    @Param('surahNumber') surahNumberParam: string,
-    @Param('ayahNumber') ayahNumberParam: string,
-    @Query('source') source: string,
-  ) {
-    const surahNumber = this.parsePositiveInt(surahNumberParam, 'surahNumber');
-    const ayahNumber = this.parsePositiveInt(ayahNumberParam, 'ayahNumber');
-
+    @Param() params: GetAyahParamsDto,
+    @Query() query: GetAyahQueryDto,
+  ): Promise<AyahResponseDto> {
     return this.ayahService.getAyah(
-      surahNumber,
-      ayahNumber,
-      this.parseSources(source),
+      params.surahNumber,
+      params.ayahNumber,
+      query.source,
     );
-  }
-
-  private parsePositiveInt(value: string, label: string): number {
-    const parsed = Number(value);
-
-    if (!Number.isInteger(parsed) || parsed <= 0) {
-      throw new BadRequestException(`${label} must be a positive integer`);
-    }
-
-    return parsed;
-  }
-
-  private parseSources(source: string): string[] {
-    if (!source) {
-      return [];
-    }
-
-    return [
-      ...new Set(
-        source
-          .split(',')
-          .map((slug) => slug.trim())
-          .filter(Boolean),
-      ),
-    ];
   }
 }

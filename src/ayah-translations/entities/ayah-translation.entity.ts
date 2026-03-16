@@ -22,8 +22,14 @@ export class AyahTranslationEntity {
   @Column()
   translationSourceId!: number;
 
-  @Column({ type: 'text' })
-  text!: string;
+  @Column({ type: 'varchar', length: 100 })
+  reference!: string;
+
+  @Column({ type: 'text', nullable: true })
+  text!: string | null;
+
+  @Column({ type: 'integer', nullable: true })
+  wordCount!: number | null;
 
   @ManyToOne(() => AyahEntity, {
     nullable: false,

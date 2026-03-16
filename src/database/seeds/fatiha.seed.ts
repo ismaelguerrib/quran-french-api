@@ -8,17 +8,22 @@ const FATIHA_SURAH_NUMBER = 1;
 const FATIHA_AYAH_NUMBERS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const TRANSLATION_SOURCES: Array<
-  Pick<TranslationSourceEntity, 'code' | 'label' | 'language'>
+  Pick<
+    TranslationSourceEntity,
+    'code' | 'label' | 'language' | 'chronologicalOrder'
+  >
 > = [
   {
     code: 'hamidullah-fr',
     label: 'Muhammad Hamidullah',
     language: 'fr',
+    chronologicalOrder: 9,
   },
   {
     code: 'masson-fr',
     label: 'Denise Masson',
     language: 'fr',
+    chronologicalOrder: 18,
   },
 ];
 
@@ -66,19 +71,20 @@ async function seedFatiha(): Promise<void> {
       await ayahRepository.upsert(
         FATIHA_AYAH_NUMBERS.map((ayahNumber) => ({
           surahNumber: FATIHA_SURAH_NUMBER,
-          ayahNumber,
+          verseKey: String(ayahNumber),
+          verseNumber: ayahNumber,
         })),
-        ['surahNumber', 'ayahNumber'],
+        ['surahNumber', 'verseKey'],
       );
 
       const ayahs = await ayahRepository.find({
         where: {
           surahNumber: FATIHA_SURAH_NUMBER,
-          ayahNumber: In([...FATIHA_AYAH_NUMBERS]),
+          verseKey: In(FATIHA_AYAH_NUMBERS.map(String)),
         },
       });
       const ayahsByNumber = new Map(
-        ayahs.map((ayah) => [ayah.ayahNumber, ayah]),
+        ayahs.map((ayah) => [ayah.verseNumber, ayah]),
       );
 
       const translationsToUpsert = TRANSLATION_SOURCES.flatMap((source) => {
@@ -105,7 +111,9 @@ async function seedFatiha(): Promise<void> {
           return {
             ayahId: ayah.id,
             translationSourceId: persistedSource.id,
+            reference: `${FATIHA_SURAH_NUMBER}${source.code}${ayahNumber}`,
             text,
+            wordCount: text.split(/\s+/).length,
           };
         });
       });

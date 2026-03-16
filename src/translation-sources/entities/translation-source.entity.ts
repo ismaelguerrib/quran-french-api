@@ -22,6 +22,9 @@ export class TranslationSourceEntity {
   @Column({ type: 'varchar', length: 10, nullable: true })
   language?: string;
 
+  @Column({ type: 'integer', nullable: true })
+  chronologicalOrder?: number;
+
   @OneToMany(
     () => AyahTranslationEntity,
     (translation) => translation.translationSource,

@@ -24,7 +24,8 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:show": "npm run typeorm -- migration:show",
-    "seed": "node -r ts-node/register ./src/database/seeds/fatiha.seed.ts"
+    "seed": "node -r ts-node/register ./src/database/seeds/import-quran-dataset.seed.ts",
+    "seed:fatiha": "node -r ts-node/register ./src/database/seeds/fatiha.seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

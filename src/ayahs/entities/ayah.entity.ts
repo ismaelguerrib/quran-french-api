@@ -1,7 +1,7 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('ayahs')
-@Index(['surahNumber', 'ayahNumber'], { unique: true })
+@Index(['surahNumber', 'verseKey'], { unique: true })
 export class AyahEntity {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -9,6 +9,9 @@ export class AyahEntity {
   @Column()
   surahNumber!: number;
 
-  @Column()
-  ayahNumber!: number;
+  @Column({ type: 'varchar', length: 50 })
+  verseKey!: string;
+
+  @Column({ type: 'integer', nullable: true })
+  verseNumber!: number | null;
 }

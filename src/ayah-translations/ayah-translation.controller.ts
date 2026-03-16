@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -14,6 +8,10 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { AyahTranslationDetailResponseDto } from './dto/ayah-translation-detail-response.dto';
+import { AyahTranslationIdParamsDto } from './dto/ayah-translation-id-params.dto';
+import { AyahTranslationListResponseDto } from './dto/ayah-translation-list-response.dto';
+import { ListAyahTranslationsQueryDto } from './dto/list-ayah-translations-query.dto';
 import { AyahTranslationService } from './ayah-translation.service';
 
 @ApiTags('Ayah Translations')
@@ -35,97 +33,57 @@ export class AyahTranslationController {
     required: false,
     schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
   })
-  @ApiOkResponse({
-    description: 'Paginated ayah translations',
+  @ApiQuery({
+    name: 'surahNumber',
+    required: false,
+    schema: { type: 'integer', minimum: 1 },
+  })
+  @ApiQuery({
+    name: 'ayahNumber',
+    required: false,
     schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'integer', example: 1 },
-              ayahId: { type: 'integer', example: 1 },
-              translationSourceId: { type: 'integer', example: 1 },
-              text: { type: 'string', example: 'Sample translation text' },
-            },
-            required: ['id', 'ayahId', 'translationSourceId', 'text'],
-          },
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            page: { type: 'integer', example: 1 },
-            pageSize: { type: 'integer', example: 20 },
-            total: { type: 'integer', example: 14 },
-          },
-          required: ['page', 'pageSize', 'total'],
-        },
-      },
-      required: ['data', 'meta'],
+      type: 'string',
+      example: '1',
+      description:
+        'Verse key from the dataset. 0 is the surah title and 0,5 is the Bismillah row.',
     },
   })
-  @ApiBadRequestResponse({ description: 'Invalid pagination query params' })
+  @ApiQuery({
+    name: 'source',
+    required: false,
+    schema: { type: 'string', example: 'hamidullah-fr' },
+  })
+  @ApiOkResponse({
+    description: 'Paginated ayah translations',
+    type: AyahTranslationListResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid pagination or filtering query parameters.',
+  })
   findAll(
-    @Query('page') pageParam?: string,
-    @Query('pageSize') pageSizeParam?: string,
-  ) {
-    const page = this.parsePositiveInt(pageParam, 'page', 1);
-    const pageSize = this.parsePositiveInt(pageSizeParam, 'pageSize', 20);
-
-    return this.ayahTranslationService.findAll(page, Math.min(pageSize, 100));
+    @Query() query: ListAyahTranslationsQueryDto,
+  ): Promise<AyahTranslationListResponseDto> {
+    return this.ayahTranslationService.findAll(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get one ayah translation by id' })
   @ApiParam({
     name: 'id',
-    description: 'Ayah translation id (>= 1)',
+    description: 'Ayah translation identifier.',
     schema: { type: 'integer', minimum: 1 },
   })
   @ApiOkResponse({
     description: 'Ayah translation detail',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'object',
-          properties: {
-            id: { type: 'integer', example: 1 },
-            ayahId: { type: 'integer', example: 1 },
-            translationSourceId: { type: 'integer', example: 1 },
-            text: { type: 'string', example: 'Sample translation text' },
-          },
-          required: ['id', 'ayahId', 'translationSourceId', 'text'],
-        },
-      },
-      required: ['data'],
-    },
+    type: AyahTranslationDetailResponseDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid id path parameter' })
+  @ApiBadRequestResponse({
+    description: 'Invalid translation identifier.',
+  })
   @ApiNotFoundResponse({ description: 'Ayah translation not found' })
-  findOne(@Param('id') id: string) {
-    return this.ayahTranslationService.findOne(this.parsePositiveInt(id, 'id'));
-  }
-
-  private parsePositiveInt(
-    value: string | undefined,
-    label: string,
-    fallback?: number,
-  ): number {
-    if (!value) {
-      if (fallback !== undefined) {
-        return fallback;
-      }
-      throw new BadRequestException(`${label} must be a positive integer`);
-    }
-
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed <= 0) {
-      throw new BadRequestException(`${label} must be a positive integer`);
-    }
-
-    return parsed;
+  findOne(
+    @Param() params: AyahTranslationIdParamsDto,
+  ): Promise<AyahTranslationDetailResponseDto> {
+    return this.ayahTranslationService.findOne(params.id);
   }
 }

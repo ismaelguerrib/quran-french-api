@@ -1,65 +1,81 @@
-import {
-  Injectable,
-  NotFoundException,
-  Optional,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, type Repository } from 'typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AyahTranslationDetailResponseDto } from './dto/ayah-translation-detail-response.dto';
+import { AyahTranslationListResponseDto } from './dto/ayah-translation-list-response.dto';
+import { AyahTranslationPayloadDto } from './dto/ayah-translation-payload.dto';
+import { ListAyahTranslationsQueryDto } from './dto/list-ayah-translations-query.dto';
 import { AyahTranslationEntity } from './entities/ayah-translation.entity';
-
-export interface AyahTranslationPayload {
-  id: number;
-  ayahId: number;
-  translationSourceId: number;
-  text: string;
-}
-
-export interface AyahTranslationListResponse {
-  data: AyahTranslationPayload[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-  };
-}
-
-export interface AyahTranslationDetailResponse {
-  data: AyahTranslationPayload;
-}
 
 @Injectable()
 export class AyahTranslationService {
   constructor(
-    @Optional()
-    @InjectDataSource()
-    private readonly dataSource?: DataSource,
+    @InjectRepository(AyahTranslationEntity)
+    private readonly ayahTranslationRepository: Repository<AyahTranslationEntity>,
   ) {}
 
   async findAll(
-    page: number,
-    pageSize: number,
-  ): Promise<AyahTranslationListResponse> {
-    const repository = this.getRepository();
-    const [rows, total] = await repository.findAndCount({
-      order: { id: 'ASC' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
+    query: ListAyahTranslationsQueryDto,
+  ): Promise<AyahTranslationListResponseDto> {
+    const queryBuilder =
+      this.ayahTranslationRepository.createQueryBuilder('ayahTranslation');
+
+    queryBuilder.leftJoinAndSelect('ayahTranslation.ayah', 'ayah');
+    queryBuilder.leftJoinAndSelect(
+      'ayahTranslation.translationSource',
+      'translationSource',
+    );
+
+    if (query.surahNumber) {
+      queryBuilder.andWhere('ayah.surahNumber = :surahNumber', {
+        surahNumber: query.surahNumber,
+      });
+    }
+
+    if (query.ayahNumber) {
+      queryBuilder.andWhere('ayah.verseKey = :verseKey', {
+        verseKey: query.ayahNumber,
+      });
+    }
+
+    if (query.source) {
+      queryBuilder.andWhere('translationSource.code = :sourceCode', {
+        sourceCode: query.source,
+      });
+    }
+
+    queryBuilder.orderBy('ayah.surahNumber', 'ASC');
+    queryBuilder.addOrderBy('ayah.verseNumber', 'ASC', 'NULLS LAST');
+    queryBuilder.addOrderBy('ayah.verseKey', 'ASC');
+    queryBuilder.addOrderBy(
+      'translationSource.chronologicalOrder',
+      'ASC',
+      'NULLS LAST',
+    );
+    queryBuilder.addOrderBy('translationSource.code', 'ASC');
+    queryBuilder.skip((query.page - 1) * query.pageSize);
+    queryBuilder.take(query.pageSize);
+
+    const [rows, total] = await queryBuilder.getManyAndCount();
 
     return {
       data: rows.map((row) => this.toPayload(row)),
       meta: {
-        page,
-        pageSize,
+        page: query.page,
+        pageSize: query.pageSize,
         total,
       },
     };
   }
 
-  async findOne(id: number): Promise<AyahTranslationDetailResponse> {
-    const repository = this.getRepository();
-    const row = await repository.findOne({ where: { id } });
+  async findOne(id: number): Promise<AyahTranslationDetailResponseDto> {
+    const row = await this.ayahTranslationRepository.findOne({
+      where: { id },
+      relations: {
+        ayah: true,
+        translationSource: true,
+      },
+    });
 
     if (!row) {
       throw new NotFoundException(
@@ -70,22 +86,19 @@ export class AyahTranslationService {
     return { data: this.toPayload(row) };
   }
 
-  private toPayload(row: AyahTranslationEntity): AyahTranslationPayload {
+  private toPayload(row: AyahTranslationEntity): AyahTranslationPayloadDto {
     return {
       id: row.id,
       ayahId: row.ayahId,
       translationSourceId: row.translationSourceId,
+      surahNumber: row.ayah.surahNumber,
+      verseKey: row.ayah.verseKey,
+      verseNumber: row.ayah.verseNumber,
+      source: row.translationSource.code,
+      author: row.translationSource.label ?? null,
+      reference: row.reference,
       text: row.text,
+      wordCount: row.wordCount,
     };
-  }
-
-  private getRepository(): Repository<AyahTranslationEntity> {
-    if (!this.dataSource) {
-      throw new ServiceUnavailableException(
-        'Database connection is not configured.',
-      );
-    }
-
-    return this.dataSource.getRepository(AyahTranslationEntity);
   }
 }

@@ -1,73 +1,58 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import {
-  Injectable,
-  NotFoundException,
-  Optional,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, type FindOptionsOrder, type Repository } from 'typeorm';
+  ListTranslationSourcesQueryDto,
+  type TranslationSourceSortField,
+} from './dto/list-translation-sources-query.dto';
+import { TranslationSourceDetailResponseDto } from './dto/translation-source-detail-response.dto';
+import { TranslationSourceListResponseDto } from './dto/translation-source-list-response.dto';
+import { TranslationSourcePayloadDto } from './dto/translation-source-payload.dto';
 import { TranslationSourceEntity } from './entities/translation-source.entity';
-
-type TranslationSourceSortBy = 'id' | 'code' | 'label' | 'language';
-type TranslationSourceSortDir = 'asc' | 'desc';
-
-export interface TranslationSourcePayload {
-  id: number;
-  code: string;
-  label: string | null;
-  language: string | null;
-}
-
-export interface TranslationSourceListResponse {
-  data: TranslationSourcePayload[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-  };
-}
-
-export interface TranslationSourceDetailResponse {
-  data: TranslationSourcePayload;
-}
 
 @Injectable()
 export class TranslationSourceService {
   constructor(
-    @Optional()
-    @InjectDataSource()
-    private readonly dataSource?: DataSource,
+    @InjectRepository(TranslationSourceEntity)
+    private readonly translationSourceRepository: Repository<TranslationSourceEntity>,
   ) {}
 
   async findAll(
-    page: number,
-    pageSize: number,
-    sortBy: TranslationSourceSortBy,
-    sortDir: TranslationSourceSortDir,
-  ): Promise<TranslationSourceListResponse> {
-    const repository = this.getRepository();
-    const orderDirection = sortDir === 'asc' ? 'ASC' : 'DESC';
-    const [rows, total] = await repository.findAndCount({
-      order: {
-        [sortBy]: orderDirection,
-      } as FindOptionsOrder<TranslationSourceEntity>,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
+    query: ListTranslationSourcesQueryDto,
+  ): Promise<TranslationSourceListResponseDto> {
+    const queryBuilder =
+      this.translationSourceRepository.createQueryBuilder('translationSource');
+
+    if (query.language) {
+      queryBuilder.where('translationSource.language = :language', {
+        language: query.language,
+      });
+    }
+
+    queryBuilder.orderBy(
+      this.resolveSortField(query.sortBy),
+      query.sortDir.toUpperCase() as 'ASC' | 'DESC',
+      'NULLS LAST',
+    );
+    queryBuilder.skip((query.page - 1) * query.pageSize);
+    queryBuilder.take(query.pageSize);
+
+    const [rows, total] = await queryBuilder.getManyAndCount();
 
     return {
       data: rows.map((row) => this.toPayload(row)),
       meta: {
-        page,
-        pageSize,
+        page: query.page,
+        pageSize: query.pageSize,
         total,
       },
     };
   }
 
-  async findOne(id: number): Promise<TranslationSourceDetailResponse> {
-    const repository = this.getRepository();
-    const row = await repository.findOne({ where: { id } });
+  async findOne(id: number): Promise<TranslationSourceDetailResponseDto> {
+    const row = await this.translationSourceRepository.findOne({
+      where: { id },
+    });
 
     if (!row) {
       throw new NotFoundException(
@@ -78,22 +63,25 @@ export class TranslationSourceService {
     return { data: this.toPayload(row) };
   }
 
-  private toPayload(row: TranslationSourceEntity): TranslationSourcePayload {
+  private toPayload(row: TranslationSourceEntity): TranslationSourcePayloadDto {
     return {
       id: row.id,
       code: row.code,
       label: row.label ?? null,
       language: row.language ?? null,
+      chronologicalOrder: row.chronologicalOrder ?? null,
     };
   }
 
-  private getRepository(): Repository<TranslationSourceEntity> {
-    if (!this.dataSource) {
-      throw new ServiceUnavailableException(
-        'Database connection is not configured.',
-      );
-    }
+  private resolveSortField(sortField: TranslationSourceSortField): string {
+    const sortFieldMap: Record<TranslationSourceSortField, string> = {
+      id: 'translationSource.id',
+      code: 'translationSource.code',
+      label: 'translationSource.label',
+      language: 'translationSource.language',
+      chronologicalOrder: 'translationSource.chronologicalOrder',
+    };
 
-    return this.dataSource.getRepository(TranslationSourceEntity);
+    return sortFieldMap[sortField];
   }
 }
