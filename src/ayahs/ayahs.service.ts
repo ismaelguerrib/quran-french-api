@@ -4,7 +4,15 @@ import { In, Repository } from 'typeorm';
 import { AyahTranslationEntity } from '../ayah-translations/entities/ayah-translation.entity';
 import { TranslationSourceEntity } from '../translation-sources/entities/translation-source.entity';
 import { AyahResponseDto } from './dto/ayah-response.dto';
+import { SurahAyahListResponseDto } from './dto/surah-ayah-list-response.dto';
 import { AyahEntity } from './entities/ayah.entity';
+import { resolveSurahDefinition } from './surah-definitions';
+
+interface LoadedSourcesResult {
+  orderedSourceCodes: string[];
+  sourceIds: number[];
+  sourcesByCode: Map<string, TranslationSourceEntity>;
+}
 
 @Injectable()
 export class AyahService {
@@ -16,6 +24,20 @@ export class AyahService {
     @InjectRepository(AyahTranslationEntity)
     private readonly ayahTranslationRepository: Repository<AyahTranslationEntity>,
   ) {}
+
+  async getAyahBySurahIdentifier(
+    surahIdentifier: string,
+    verseKey: string,
+    requestedSourceCodes?: string[],
+  ): Promise<AyahResponseDto> {
+    const surahDefinition = this.getRequiredSurahDefinition(surahIdentifier);
+
+    return this.getAyah(
+      surahDefinition.surahNumber,
+      verseKey,
+      requestedSourceCodes,
+    );
+  }
 
   async getAyah(
     surahNumber: number,
@@ -32,21 +54,8 @@ export class AyahService {
       );
     }
 
-    const sources = requestedSourceCodes
-      ? await this.translationSourceRepository.find({
-          where: { code: In(requestedSourceCodes) },
-        })
-      : await this.translationSourceRepository.find({
-          order: {
-            chronologicalOrder: 'ASC',
-            code: 'ASC',
-          },
-        });
-
-    const sourcesByCode = new Map(
-      sources.map((source) => [source.code, source]),
-    );
-    const sourceIds = sources.map((source) => source.id);
+    const { orderedSourceCodes, sourceIds, sourcesByCode } =
+      await this.loadSources(requestedSourceCodes);
 
     const translations =
       sourceIds.length > 0
@@ -58,20 +67,136 @@ export class AyahService {
           })
         : [];
 
-    const translationBySourceId = new Map(
+    const translationBySourceId = new Map<number, AyahTranslationEntity>(
       translations.map((translation) => [
         translation.translationSourceId,
         translation,
       ]),
     );
 
-    const orderedSourceCodes =
-      requestedSourceCodes && requestedSourceCodes.length > 0
-        ? requestedSourceCodes
-        : sources.map((source) => source.code);
+    return this.toAyahResponse(
+      ayah,
+      orderedSourceCodes,
+      sourcesByCode,
+      translationBySourceId,
+    );
+  }
+
+  async listAyahsBySurahIdentifier(
+    surahIdentifier: string,
+    requestedSourceCodes?: string[],
+  ): Promise<SurahAyahListResponseDto> {
+    const surahDefinition = this.getRequiredSurahDefinition(surahIdentifier);
+    const ayahs = await this.ayahRepository.find({
+      where: { surahNumber: surahDefinition.surahNumber },
+    });
+
+    if (ayahs.length === 0) {
+      throw new NotFoundException(
+        `Surah ${surahDefinition.surahNumber} was not found.`,
+      );
+    }
+
+    ayahs.sort((leftAyah, rightAyah) => {
+      if (
+        leftAyah.verseNumber !== null &&
+        rightAyah.verseNumber !== null &&
+        leftAyah.verseNumber !== rightAyah.verseNumber
+      ) {
+        return leftAyah.verseNumber - rightAyah.verseNumber;
+      }
+
+      return leftAyah.verseKey.localeCompare(rightAyah.verseKey);
+    });
+
+    const { orderedSourceCodes, sourceIds, sourcesByCode } =
+      await this.loadSources(requestedSourceCodes);
+
+    const ayahIds = ayahs.map((ayah) => ayah.id);
+    const translations =
+      ayahIds.length > 0 && sourceIds.length > 0
+        ? await this.ayahTranslationRepository.find({
+            where: {
+              ayahId: In(ayahIds),
+              translationSourceId: In(sourceIds),
+            },
+          })
+        : [];
+
+    const translationsByAyahId = new Map<
+      number,
+      Map<number, AyahTranslationEntity>
+    >();
+
+    for (const translation of translations) {
+      const translationBySourceId =
+        translationsByAyahId.get(translation.ayahId) ??
+        new Map<number, AyahTranslationEntity>();
+
+      translationBySourceId.set(translation.translationSourceId, translation);
+      translationsByAyahId.set(translation.ayahId, translationBySourceId);
+    }
 
     return {
-      surahNumber,
+      data: ayahs.map((ayah) =>
+        this.toAyahResponse(
+          ayah,
+          orderedSourceCodes,
+          sourcesByCode,
+          translationsByAyahId.get(ayah.id) ??
+            new Map<number, AyahTranslationEntity>(),
+        ),
+      ),
+      meta: {
+        surahNumber: surahDefinition.surahNumber,
+        surahName: surahDefinition.canonicalName,
+        total: ayahs.length,
+      },
+    };
+  }
+
+  private getRequiredSurahDefinition(surahIdentifier: string) {
+    const surahDefinition = resolveSurahDefinition(surahIdentifier);
+
+    if (!surahDefinition) {
+      throw new NotFoundException(`Surah "${surahIdentifier}" was not found.`);
+    }
+
+    return surahDefinition;
+  }
+
+  private async loadSources(
+    requestedSourceCodes?: string[],
+  ): Promise<LoadedSourcesResult> {
+    const sources = requestedSourceCodes
+      ? await this.translationSourceRepository.find({
+          where: { code: In(requestedSourceCodes) },
+        })
+      : await this.translationSourceRepository.find({
+          order: {
+            chronologicalOrder: 'ASC',
+            code: 'ASC',
+          },
+        });
+
+    return {
+      orderedSourceCodes:
+        requestedSourceCodes && requestedSourceCodes.length > 0
+          ? requestedSourceCodes
+          : sources.map((source) => source.code),
+      sourceIds: sources.map((source) => source.id),
+      sourcesByCode: new Map(sources.map((source) => [source.code, source])),
+    };
+  }
+
+  private toAyahResponse(
+    ayah: AyahEntity,
+    orderedSourceCodes: string[],
+    sourcesByCode: Map<string, TranslationSourceEntity>,
+    translationBySourceId: Map<number, AyahTranslationEntity>,
+  ): AyahResponseDto {
+    return {
+      surahNumber: ayah.surahNumber,
       verseKey: ayah.verseKey,
       verseNumber: ayah.verseNumber,
       translations: orderedSourceCodes.map((sourceCode) => {

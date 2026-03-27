@@ -20,6 +20,20 @@ describe('Quran French API (e2e)', () => {
       verseNumber: 1,
       translations: [],
     }),
+    getAyahBySurahIdentifier: jest.fn().mockResolvedValue({
+      surahNumber: 1,
+      verseKey: '1',
+      verseNumber: 1,
+      translations: [],
+    }),
+    listAyahsBySurahIdentifier: jest.fn().mockResolvedValue({
+      data: [],
+      meta: {
+        surahNumber: 1,
+        surahName: 'al-fatiha',
+        total: 0,
+      },
+    }),
   };
   const translationSourceService = {
     findAll: jest.fn().mockResolvedValue({
@@ -116,6 +130,14 @@ describe('Quran French API (e2e)', () => {
             body.paths['/ayahs/{surahNumber}/{ayahNumber}'],
         ).toBeDefined();
         expect(
+          body.paths['/v1/ayahs/surah/{surahIdentifier}'] ??
+            body.paths['/ayahs/surah/{surahIdentifier}'],
+        ).toBeDefined();
+        expect(
+          body.paths['/v1/ayahs/surah/{surahIdentifier}/{ayahNumber}'] ??
+            body.paths['/ayahs/surah/{surahIdentifier}/{ayahNumber}'],
+        ).toBeDefined();
+        expect(
           body.paths['/v1/translation-sources'] ??
             body.paths['/translation-sources'] ??
             body.paths['/v1/translation-source'] ??
@@ -132,5 +154,44 @@ describe('Quran French API (e2e)', () => {
     return request(app.getHttpServer())
       .get('/v1/translation-sources?page=0')
       .expect(400);
+  });
+
+  it('/v1/ayahs/surah/al-fatiha/1 (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/v1/ayahs/surah/al-fatiha/1?source=hamidullah-fr')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          surahNumber: 1,
+          verseKey: '1',
+          verseNumber: 1,
+          translations: [],
+        });
+        expect(ayahService.getAyahBySurahIdentifier).toHaveBeenCalledWith(
+          'al-fatiha',
+          '1',
+          ['hamidullah-fr'],
+        );
+      });
+  });
+
+  it('/v1/ayahs/surah/al-fatiha (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/v1/ayahs/surah/al-fatiha?source=hamidullah-fr,masson-fr')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          data: [],
+          meta: {
+            surahNumber: 1,
+            surahName: 'al-fatiha',
+            total: 0,
+          },
+        });
+        expect(ayahService.listAyahsBySurahIdentifier).toHaveBeenCalledWith(
+          'al-fatiha',
+          ['hamidullah-fr', 'masson-fr'],
+        );
+      });
   });
 });
