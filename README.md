@@ -15,39 +15,6 @@ The API serves Quran verses and **multiple French translations per verse**.
 - 🔒 **Read-only API** (no mutation endpoints)
 - 🗃️ **Database as the single source of truth**
 
-## 🗃️ Data Model (Database as Source of Truth)
-
-### `verses`
-
-Canonical verses (independent of translations):
-
-- `id`
-- `surah_number`
-- `ayah_number`
-- unique `(surah_number, ayah_number)`
-
-### `translation_sources`
-
-Represents a translation author/source:
-
-- `id`
-- `slug` (used by the API as `source`)
-- `author_name`
-- `language_code` (e.g. `fr`)
-- `created_at`
-
-### `verse_texts`
-
-Translated text per verse and per source:
-
-- `id`
-- `verse_id`
-- `source_id`
-- `text`
-- unique `(verse_id, source_id)`
-
----
-
 ## 🌐 API Design
 
 - **Protocol**: HTTP
@@ -55,27 +22,6 @@ Translated text per verse and per source:
 - **Format**: JSON
 - **Documentation**: OpenAPI (Swagger)
 - **Versioning**: URI-based (`/v1/...`)
-
-### Example
-
-```text
-GET /v1/verses/2/255?source=hamidullah-fr,masson-fr
-```
-
-```json
-{
-  "surahNumber": 2,
-  "ayahNumber": 255,
-  "translations": [
-    {
-      "source": "hamidullah-fr",
-      "author": "Muhammad Hamidullah",
-      "text": "..."
-    },
-    { "source": "masson-fr", "author": "Denise Masson", "text": "..." }
-  ]
-}
-```
 
 ---
 
