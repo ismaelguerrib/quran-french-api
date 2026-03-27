@@ -315,8 +315,14 @@ export function resolveSurahDefinition(
   const normalizedIdentifier = normalizeSurahIdentifier(surahIdentifier);
 
   if (/^\d+$/.test(normalizedIdentifier)) {
-    return surahDefinitionByNumber.get(Number(normalizedIdentifier));
+    return getSurahDefinitionByNumber(Number(normalizedIdentifier));
   }
 
   return surahDefinitionByAlias.get(normalizedIdentifier);
+}
+
+export function getSurahDefinitionByNumber(
+  surahNumber: number,
+): SurahDefinition | undefined {
+  return surahDefinitionByNumber.get(surahNumber);
 }

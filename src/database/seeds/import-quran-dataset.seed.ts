@@ -5,6 +5,8 @@ import { type Repository } from 'typeorm';
 import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { AyahTranslationEntity } from '../../ayah-translations/entities/ayah-translation.entity';
 import { AyahEntity } from '../../ayahs/entities/ayah.entity';
+import { SurahEntity } from '../../surahs/entities/surah.entity';
+import { getSurahDefinitionByNumber } from '../../surahs/surah-definitions';
 import { TranslationSourceEntity } from '../../translation-sources/entities/translation-source.entity';
 import AppDataSource from '../data-source';
 
@@ -45,6 +47,12 @@ interface AyahSeedRecord {
   surahNumber: number;
   verseKey: string;
   verseNumber: number | null;
+}
+
+interface SurahSeedRecord {
+  surahNumber: number;
+  canonicalName: string;
+  arabicName: string | null;
 }
 
 interface PendingTranslationSeedRecord {
@@ -244,6 +252,7 @@ async function insertInBatches<T extends object>(
 async function importDataset(): Promise<void> {
   const datasetRows = await loadDatasetRows();
 
+  const surahsByNumber = new Map<number, SurahSeedRecord>();
   const translationSourcesByCode = new Map<
     string,
     TranslationSourceSeedRecord
@@ -252,6 +261,47 @@ async function importDataset(): Promise<void> {
   const pendingTranslations: PendingTranslationSeedRecord[] = [];
 
   for (const datasetRow of datasetRows) {
+    const surahDefinition = getSurahDefinitionByNumber(datasetRow.surahNumber);
+    if (!surahDefinition) {
+      throw new Error(
+        `Unexpected surah number ${datasetRow.surahNumber} in dataset.`,
+      );
+    }
+
+    const arabicSurahName =
+      datasetRow.translatorName === 'a- arabe' && datasetRow.verseKey === '0'
+        ? datasetRow.translationText
+        : null;
+
+    const existingSurah = surahsByNumber.get(datasetRow.surahNumber);
+    if (existingSurah) {
+      if (existingSurah.canonicalName !== surahDefinition.canonicalName) {
+        throw new Error(
+          `Inconsistent canonical surah metadata for ${datasetRow.surahNumber}.`,
+        );
+      }
+
+      if (
+        arabicSurahName &&
+        existingSurah.arabicName &&
+        existingSurah.arabicName !== arabicSurahName
+      ) {
+        throw new Error(
+          `Inconsistent Arabic surah title for ${datasetRow.surahNumber}.`,
+        );
+      }
+
+      if (arabicSurahName && !existingSurah.arabicName) {
+        existingSurah.arabicName = arabicSurahName;
+      }
+    } else {
+      surahsByNumber.set(datasetRow.surahNumber, {
+        surahNumber: datasetRow.surahNumber,
+        canonicalName: surahDefinition.canonicalName,
+        arabicName: arabicSurahName,
+      });
+    }
+
     const language = inferLanguage(datasetRow.translatorName);
     const sourceCode = createTranslationSourceCode(
       datasetRow.translatorName,
@@ -300,6 +350,22 @@ async function importDataset(): Promise<void> {
     });
   }
 
+  const surahRecords = Array.from(surahsByNumber.values()).sort(
+    (leftSurah, rightSurah) => leftSurah.surahNumber - rightSurah.surahNumber,
+  );
+
+  const surahsMissingArabicName = surahRecords.filter(
+    (surahRecord) => surahRecord.arabicName === null,
+  );
+
+  if (surahsMissingArabicName.length > 0) {
+    throw new Error(
+      `Missing Arabic surah title rows for surah numbers: ${surahsMissingArabicName
+        .map((surahRecord) => surahRecord.surahNumber)
+        .join(', ')}.`,
+    );
+  }
+
   await AppDataSource.initialize();
 
   try {
@@ -308,12 +374,14 @@ async function importDataset(): Promise<void> {
         AyahTranslationEntity,
       );
       const ayahRepository = entityManager.getRepository(AyahEntity);
+      const surahRepository = entityManager.getRepository(SurahEntity);
       const translationSourceRepository = entityManager.getRepository(
         TranslationSourceEntity,
       );
 
       await ayahTranslationRepository.clear();
       await ayahRepository.clear();
+      await surahRepository.clear();
       await translationSourceRepository.clear();
 
       const translationSourceRecords = Array.from(
@@ -331,6 +399,7 @@ async function importDataset(): Promise<void> {
         translationSourceRecords,
         250,
       );
+      await insertInBatches(surahRepository, surahRecords, 250);
 
       const ayahRecords = Array.from(ayahsByCompositeKey.values()).sort(
         (leftAyah, rightAyah) => {
@@ -400,7 +469,7 @@ async function importDataset(): Promise<void> {
       );
 
       console.log(
-        `Dataset import complete: ${ayahRecords.length} verse keys, ${translationSourceRecords.length} sources, ${translationRecords.length} translations.`,
+        `Dataset import complete: ${surahRecords.length} surahs, ${ayahRecords.length} verse keys, ${translationSourceRecords.length} sources, ${translationRecords.length} translations.`,
       );
     });
   } finally {

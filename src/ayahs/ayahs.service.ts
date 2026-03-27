@@ -2,11 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { AyahTranslationEntity } from '../ayah-translations/entities/ayah-translation.entity';
+import { resolveSurahDefinition } from '../surahs/surah-definitions';
 import { TranslationSourceEntity } from '../translation-sources/entities/translation-source.entity';
 import { AyahResponseDto } from './dto/ayah-response.dto';
 import { SurahAyahListResponseDto } from './dto/surah-ayah-list-response.dto';
 import { AyahEntity } from './entities/ayah.entity';
-import { resolveSurahDefinition } from './surah-definitions';
 
 interface LoadedSourcesResult {
   orderedSourceCodes: string[];
