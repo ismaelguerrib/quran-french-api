@@ -2,12 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  ListTranslationSourcesQueryDto,
+  TranslationSourceQueryDto,
   type TranslationSourceSortField,
-} from './dto/list-translation-sources-query.dto';
-import { TranslationSourceDetailResponseDto } from './dto/translation-source-detail-response.dto';
+} from './dto/translation-source.query.dto';
 import { TranslationSourceListResponseDto } from './dto/translation-source-list-response.dto';
-import { TranslationSourcePayloadDto } from './dto/translation-source-payload.dto';
+import { TranslationSourceResponseDto } from './dto/translation-source-response.dto';
+import { TranslationSourceDto } from './dto/translation-source.dto';
 import { TranslationSourceEntity } from './entities/translation-source.entity';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class TranslationSourceService {
   ) {}
 
   async findAll(
-    query: ListTranslationSourcesQueryDto,
+    query: TranslationSourceQueryDto,
   ): Promise<TranslationSourceListResponseDto> {
     const queryBuilder =
       this.translationSourceRepository.createQueryBuilder('translationSource');
@@ -49,7 +49,7 @@ export class TranslationSourceService {
     };
   }
 
-  async findOne(id: number): Promise<TranslationSourceDetailResponseDto> {
+  async findOne(id: number): Promise<TranslationSourceResponseDto> {
     const row = await this.translationSourceRepository.findOne({
       where: { id },
     });
@@ -63,7 +63,7 @@ export class TranslationSourceService {
     return { data: this.toPayload(row) };
   }
 
-  private toPayload(row: TranslationSourceEntity): TranslationSourcePayloadDto {
+  private toPayload(row: TranslationSourceEntity): TranslationSourceDto {
     return {
       id: row.id,
       code: row.code,

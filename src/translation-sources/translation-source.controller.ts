@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -8,10 +8,9 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { ListTranslationSourcesQueryDto } from './dto/list-translation-sources-query.dto';
-import { TranslationSourceDetailResponseDto } from './dto/translation-source-detail-response.dto';
-import { TranslationSourceIdParamsDto } from './dto/translation-source-id-params.dto';
+import { TranslationSourceQueryDto } from './dto/translation-source.query.dto';
 import { TranslationSourceListResponseDto } from './dto/translation-source-list-response.dto';
+import { TranslationSourceResponseDto } from './dto/translation-source-response.dto';
 import { TranslationSourceService } from './translation-source.service';
 
 @ApiTags('Translation Sources')
@@ -66,7 +65,7 @@ export class TranslationSourceController {
     description: 'Invalid pagination, sorting, or filtering parameters.',
   })
   findAll(
-    @Query() query: ListTranslationSourcesQueryDto,
+    @Query() query: TranslationSourceQueryDto,
   ): Promise<TranslationSourceListResponseDto> {
     return this.translationSourceService.findAll(query);
   }
@@ -80,15 +79,15 @@ export class TranslationSourceController {
   })
   @ApiOkResponse({
     description: 'Translation source detail',
-    type: TranslationSourceDetailResponseDto,
+    type: TranslationSourceResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Invalid translation source identifier.',
   })
   @ApiNotFoundResponse({ description: 'Translation source not found' })
   findOne(
-    @Param() params: TranslationSourceIdParamsDto,
-  ): Promise<TranslationSourceDetailResponseDto> {
-    return this.translationSourceService.findOne(params.id);
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<TranslationSourceResponseDto> {
+    return this.translationSourceService.findOne(id);
   }
 }

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { AyahResponseDto } from './ayah-response.dto';
 
-export class SurahAyahListMetaDto {
+class AyahListMetaDto {
   @ApiProperty({ example: 2 })
   surahNumber!: number;
 
@@ -16,4 +17,12 @@ export class SurahAyahListMetaDto {
     example: 287,
   })
   total!: number;
+}
+
+export class AyahListResponseDto {
+  @ApiProperty({ type: AyahResponseDto, isArray: true })
+  data!: AyahResponseDto[];
+
+  @ApiProperty({ type: AyahListMetaDto })
+  meta!: AyahListMetaDto;
 }

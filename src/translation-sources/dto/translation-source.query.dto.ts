@@ -13,7 +13,7 @@ export const TRANSLATION_SOURCE_SORT_FIELDS = [
 export type TranslationSourceSortField =
   (typeof TRANSLATION_SOURCE_SORT_FIELDS)[number];
 
-export class ListTranslationSourcesQueryDto {
+export class TranslationSourceQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1, minimum: 1 })
   @Type(() => Number)
   @IsInt()

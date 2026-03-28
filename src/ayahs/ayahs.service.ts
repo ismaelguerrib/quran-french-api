@@ -4,8 +4,8 @@ import { In, Repository } from 'typeorm';
 import { AyahTranslationEntity } from '../ayah-translations/entities/ayah-translation.entity';
 import { resolveSurahDefinition } from '../surahs/surah-definitions';
 import { TranslationSourceEntity } from '../translation-sources/entities/translation-source.entity';
+import { AyahListResponseDto } from './dto/ayah-list-response.dto';
 import { AyahResponseDto } from './dto/ayah-response.dto';
-import { SurahAyahListResponseDto } from './dto/surah-ayah-list-response.dto';
 import { AyahEntity } from './entities/ayah.entity';
 
 interface LoadedSourcesResult {
@@ -85,7 +85,7 @@ export class AyahService {
   async listAyahsBySurahIdentifier(
     surahIdentifier: string,
     requestedSourceCodes?: string[],
-  ): Promise<SurahAyahListResponseDto> {
+  ): Promise<AyahListResponseDto> {
     const surahDefinition = this.getRequiredSurahDefinition(surahIdentifier);
     const ayahs = await this.ayahRepository.find({
       where: { surahNumber: surahDefinition.surahNumber },

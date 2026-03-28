@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -8,12 +8,9 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { AyahListResponseDto } from './dto/ayah-list-response.dto';
 import { AyahResponseDto } from './dto/ayah-response.dto';
-import { GetAyahBySurahIdentifierParamsDto } from './dto/get-ayah-by-surah-identifier-params.dto';
-import { GetAyahParamsDto } from './dto/get-ayah-params.dto';
-import { GetAyahQueryDto } from './dto/get-ayah-query.dto';
-import { ListSurahAyahsParamsDto } from './dto/list-surah-ayahs-params.dto';
-import { SurahAyahListResponseDto } from './dto/surah-ayah-list-response.dto';
+import { AyahQueryDto } from './dto/ayah.query.dto';
 import { AyahService } from './ayahs.service';
 
 @ApiTags('Ayahs')
@@ -56,12 +53,13 @@ export class AyahController {
     description: 'Surah or verse not found for the given identifier.',
   })
   async getAyahBySurahIdentifier(
-    @Param() params: GetAyahBySurahIdentifierParamsDto,
-    @Query() query: GetAyahQueryDto,
+    @Param('surahIdentifier') surahIdentifier: string,
+    @Param('ayahNumber') ayahNumber: string,
+    @Query() query: AyahQueryDto,
   ): Promise<AyahResponseDto> {
     return this.ayahService.getAyahBySurahIdentifier(
-      params.surahIdentifier,
-      params.ayahNumber,
+      surahIdentifier,
+      ayahNumber,
       query.source,
     );
   }
@@ -86,7 +84,7 @@ export class AyahController {
   @ApiOkResponse({
     description:
       'All verse rows for the surah in dataset order, including special rows such as 0 or 0,5 when present.',
-    type: SurahAyahListResponseDto,
+    type: AyahListResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Invalid path or query parameters.',
@@ -95,11 +93,11 @@ export class AyahController {
     description: 'Surah not found for the given identifier.',
   })
   async listAyahsBySurah(
-    @Param() params: ListSurahAyahsParamsDto,
-    @Query() query: GetAyahQueryDto,
-  ): Promise<SurahAyahListResponseDto> {
+    @Param('surahIdentifier') surahIdentifier: string,
+    @Query() query: AyahQueryDto,
+  ): Promise<AyahListResponseDto> {
     return this.ayahService.listAyahsBySurahIdentifier(
-      params.surahIdentifier,
+      surahIdentifier,
       query.source,
     );
   }
@@ -139,13 +137,10 @@ export class AyahController {
       'Verse not found for the given surah number and dataset verse key.',
   })
   async getAyah(
-    @Param() params: GetAyahParamsDto,
-    @Query() query: GetAyahQueryDto,
+    @Param('surahNumber', ParseIntPipe) surahNumber: number,
+    @Param('ayahNumber') ayahNumber: string,
+    @Query() query: AyahQueryDto,
   ): Promise<AyahResponseDto> {
-    return this.ayahService.getAyah(
-      params.surahNumber,
-      params.ayahNumber,
-      query.source,
-    );
+    return this.ayahService.getAyah(surahNumber, ayahNumber, query.source);
   }
 }

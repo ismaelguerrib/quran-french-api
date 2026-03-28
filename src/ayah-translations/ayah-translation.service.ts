@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AyahTranslationDetailResponseDto } from './dto/ayah-translation-detail-response.dto';
+import { AyahTranslationQueryDto } from './dto/ayah-translation.query.dto';
 import { AyahTranslationListResponseDto } from './dto/ayah-translation-list-response.dto';
-import { AyahTranslationPayloadDto } from './dto/ayah-translation-payload.dto';
-import { ListAyahTranslationsQueryDto } from './dto/list-ayah-translations-query.dto';
+import { AyahTranslationResponseDto } from './dto/ayah-translation-response.dto';
+import { AyahTranslationDto } from './dto/ayah-translation.dto';
 import { AyahTranslationEntity } from './entities/ayah-translation.entity';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class AyahTranslationService {
   ) {}
 
   async findAll(
-    query: ListAyahTranslationsQueryDto,
+    query: AyahTranslationQueryDto,
   ): Promise<AyahTranslationListResponseDto> {
     const queryBuilder =
       this.ayahTranslationRepository.createQueryBuilder('ayahTranslation');
@@ -68,7 +68,7 @@ export class AyahTranslationService {
     };
   }
 
-  async findOne(id: number): Promise<AyahTranslationDetailResponseDto> {
+  async findOne(id: number): Promise<AyahTranslationResponseDto> {
     const row = await this.ayahTranslationRepository.findOne({
       where: { id },
       relations: {
@@ -86,7 +86,7 @@ export class AyahTranslationService {
     return { data: this.toPayload(row) };
   }
 
-  private toPayload(row: AyahTranslationEntity): AyahTranslationPayloadDto {
+  private toPayload(row: AyahTranslationEntity): AyahTranslationDto {
     return {
       id: row.id,
       ayahId: row.ayahId,

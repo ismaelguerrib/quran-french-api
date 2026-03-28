@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class TranslationSourcePayloadDto {
+export class TranslationSourceDto {
   @ApiProperty({ example: 1 })
   id!: number;
 

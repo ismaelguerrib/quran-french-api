@@ -33,10 +33,7 @@ describe('AyahController', () => {
       translations: [],
     });
 
-    await controller.getAyah(
-      { surahNumber: 2, ayahNumber: '255' },
-      { source: ['hamidullah-fr'] },
-    );
+    await controller.getAyah(2, '255', { source: ['hamidullah-fr'] });
 
     expect(ayahService.getAyah).toHaveBeenCalledWith(2, '255', [
       'hamidullah-fr',
@@ -51,10 +48,9 @@ describe('AyahController', () => {
       translations: [],
     });
 
-    await controller.getAyahBySurahIdentifier(
-      { surahIdentifier: 'al-baqara', ayahNumber: '255' },
-      { source: ['hamidullah-fr', 'masson-fr'] },
-    );
+    await controller.getAyahBySurahIdentifier('al-baqara', '255', {
+      source: ['hamidullah-fr', 'masson-fr'],
+    });
 
     expect(ayahService.getAyahBySurahIdentifier).toHaveBeenCalledWith(
       'al-baqara',
@@ -73,10 +69,9 @@ describe('AyahController', () => {
       },
     });
 
-    await controller.listAyahsBySurah(
-      { surahIdentifier: 'al-fatiha' },
-      { source: ['hamidullah-fr'] },
-    );
+    await controller.listAyahsBySurah('al-fatiha', {
+      source: ['hamidullah-fr'],
+    });
 
     expect(ayahService.listAyahsBySurahIdentifier).toHaveBeenCalledWith(
       'al-fatiha',

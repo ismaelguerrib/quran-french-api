@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-export class ListAyahTranslationsQueryDto {
+export class AyahTranslationQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1, minimum: 1 })
   @Type(() => Number)
   @IsInt()

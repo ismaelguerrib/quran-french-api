@@ -19,7 +19,7 @@ function parseSourceQuery(value: unknown): string[] | undefined {
   return sourceCodes.length > 0 ? sourceCodes : undefined;
 }
 
-export class GetAyahQueryDto {
+export class AyahQueryDto {
   @ApiPropertyOptional({
     name: 'source',
     description:

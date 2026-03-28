@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -8,10 +8,9 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { AyahTranslationDetailResponseDto } from './dto/ayah-translation-detail-response.dto';
-import { AyahTranslationIdParamsDto } from './dto/ayah-translation-id-params.dto';
+import { AyahTranslationQueryDto } from './dto/ayah-translation.query.dto';
 import { AyahTranslationListResponseDto } from './dto/ayah-translation-list-response.dto';
-import { ListAyahTranslationsQueryDto } from './dto/list-ayah-translations-query.dto';
+import { AyahTranslationResponseDto } from './dto/ayah-translation-response.dto';
 import { AyahTranslationService } from './ayah-translation.service';
 
 @ApiTags('Ayah Translations')
@@ -61,7 +60,7 @@ export class AyahTranslationController {
     description: 'Invalid pagination or filtering query parameters.',
   })
   findAll(
-    @Query() query: ListAyahTranslationsQueryDto,
+    @Query() query: AyahTranslationQueryDto,
   ): Promise<AyahTranslationListResponseDto> {
     return this.ayahTranslationService.findAll(query);
   }
@@ -75,15 +74,15 @@ export class AyahTranslationController {
   })
   @ApiOkResponse({
     description: 'Ayah translation detail',
-    type: AyahTranslationDetailResponseDto,
+    type: AyahTranslationResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Invalid translation identifier.',
   })
   @ApiNotFoundResponse({ description: 'Ayah translation not found' })
   findOne(
-    @Param() params: AyahTranslationIdParamsDto,
-  ): Promise<AyahTranslationDetailResponseDto> {
-    return this.ayahTranslationService.findOne(params.id);
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<AyahTranslationResponseDto> {
+    return this.ayahTranslationService.findOne(id);
   }
 }

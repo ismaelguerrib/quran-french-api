@@ -66,7 +66,7 @@ describe('AyahTranslationController', () => {
       },
     });
 
-    await controller.findOne({ id: 1 });
+    await controller.findOne(1);
 
     expect(ayahTranslationService.findOne).toHaveBeenCalledWith(1);
   });

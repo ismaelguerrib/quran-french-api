@@ -58,7 +58,7 @@ describe('TranslationSourceController', () => {
       },
     });
 
-    await controller.findOne({ id: 1 });
+    await controller.findOne(1);
 
     expect(translationSourceService.findOne).toHaveBeenCalledWith(1);
   });
